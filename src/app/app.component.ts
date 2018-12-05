@@ -21,6 +21,8 @@ export class AppComponent implements OnInit {
 
     first: boolean = true;
 
+    showCHART: boolean = false;
+
     chartTitle: string = 'Vozniski staz';
 
     dogodki: Dogodek[] = [];
@@ -141,17 +143,17 @@ export class AppComponent implements OnInit {
     }
 
 
-    countAgg(){
+    countAgg() {
         this.client.search({
                 index: this.index,
                 body: {
                     query: {
-                        "match_all": {}
+                        'match_all': {}
                     },
                     aggs: {
                         poLetih: {
                             terms: {
-                                field: "Leto",
+                                field: 'Leto',
                                 size: 13
                             }
                         }
@@ -171,12 +173,12 @@ export class AppComponent implements OnInit {
                 index: this.index,
                 body: {
                     query: {
-                        "match_all": {}
+                        'match_all': {}
                     },
                     aggs: {
                         poUrah: {
                             terms: {
-                                field: "UraPN",
+                                field: 'UraPN',
                                 size: 24
                             }
                         }
@@ -186,8 +188,8 @@ export class AppComponent implements OnInit {
         ).then(res => {
             let aggregationsUra = res.aggregations.poUrah.buckets;
             this.dataPass = aggregationsUra;
-            console.log(aggregationsUra)
-            // this.buildChart();
+            console.log(aggregationsUra);
+            this.buildChart();
         });
     }
 
@@ -196,12 +198,12 @@ export class AppComponent implements OnInit {
                 index: this.index,
                 body: {
                     query: {
-                        "match_all": {}
+                        'match_all': {}
                     },
                     aggs: {
                         poKlasi: {
                             terms: {
-                                field: "KlasifikacijaNesrece.keyword",
+                                field: 'KlasifikacijaNesrece.keyword',
                                 size: 8
                             }
                         }
@@ -212,7 +214,7 @@ export class AppComponent implements OnInit {
             let data = res.hits.hits;
             let aggregationsKlasifikacija = res.aggregations.poKlasi.buckets;
             this.dataPass = aggregationsKlasifikacija;
-            console.log(aggregationsKlasifikacija)
+            console.log(aggregationsKlasifikacija);
         });
     }
 
@@ -222,12 +224,12 @@ export class AppComponent implements OnInit {
                 index: this.index,
                 body: {
                     query: {
-                        "match_all": {}
+                        'match_all': {}
                     },
                     aggs: {
                         poVzroku: {
                             terms: {
-                                field: "VremenskeOkoliscine.keyword",
+                                field: 'VremenskeOkoliscine.keyword',
                                 size: 5
                             }
                         }
@@ -237,7 +239,7 @@ export class AppComponent implements OnInit {
         ).then(res => {
             let aggregations = res.aggregations.poVzroku.buckets;
             this.dataPass = aggregations;
-            console.log(aggregations)
+            console.log(aggregations);
         });
     }
 
@@ -246,12 +248,12 @@ export class AppComponent implements OnInit {
                 index: this.index,
                 body: {
                     query: {
-                        "match_all": {}
+                        'match_all': {}
                     },
                     aggs: {
                         poSpolu: {
                             terms: {
-                                field: "VNaselju.Spol.keyword",
+                                field: 'VNaselju.Spol.keyword',
                                 size: 2
                             }
                         }
@@ -261,7 +263,7 @@ export class AppComponent implements OnInit {
         ).then(res => {
             let aggregations = res.aggregations.poSpolu.buckets;
             this.dataPass = aggregations;
-            console.log(aggregations)
+            console.log(aggregations);
         });
     }
 
@@ -320,24 +322,22 @@ export class AppComponent implements OnInit {
     }
 
 
-    sortPoUrah(){
+    sortPoUrah() {
         this.dataPass.sort((a: any, b: any) => {
             return a.key - b.key;
-        })
+        });
     }
 
 
-
-
-    buildChart(element) {
+    buildChart() {
         this.chartProps = {};
         // this.formatDate();
         this.sortPoUrah();
         console.log(this.dataPass);
         // Set the dimensions of the canvas / graph
-        let margin = {top: 30, right: 20, bottom: 30, left: 50},
-            width = 1400 - margin.left - margin.right,
-            height = 270 - margin.top - margin.bottom;
+        let margin = {top: 30, right: 50, bottom: 30, left: 50},
+            width = window.innerWidth - margin.left - margin.right,
+            height = 400 - margin.top - margin.bottom;
 
         // Set the ranges
         this.chartProps.x = d3.scaleLinear().range([0, width]);
@@ -392,12 +392,9 @@ export class AppComponent implements OnInit {
                 return _this.chartProps.y(d.doc_count);
             });
 
-
-
-
-        // let svg = d3.select(this.chartElement.nativeElement)
-        let svg = d3.select(element)
-            .append('foreignObject')
+        let svg = d3.select(this.chartElement.nativeElement)
+        // let svg = d3.select(element)
+            .append('svg')
             .attr('width', width + margin.left + margin.right)
             .attr('height', height + margin.top + margin.bottom)
             .append('g')
@@ -414,16 +411,18 @@ export class AppComponent implements OnInit {
         //
         //     }));
 
-        this.chartProps.x.domain(d3.extent(_this.dataPass, function(d) { return d.key; }));
+        this.chartProps.x.domain(d3.extent(_this.dataPass, function (d) {
+            return d.key;
+        }));
         this.chartProps.y.domain([0, d3.max(_this.dataPass, function (d) {
             // return Math.max(0, d.doc_count);
-            return d.doc_count*1.10;
+            return d.doc_count * 1.10;
         })]);
 
         // Add the valueline path.
         svg.append('path')
             .attr('class', 'line line1')
-            .style('stroke', 'green')
+            .style('stroke', '#f4f4f4')
             .style('fill', 'none')
             .attr('d', poUrah(_this.dataPass));
 
@@ -446,8 +445,6 @@ export class AppComponent implements OnInit {
             .attr('class', 'y axis')
             .call(yAxis);
 
-        d3.select(element).moveToFront();
-
         // Setting the required objects in chartProps so they could be used to update the chart
         this.chartProps.svg = svg;
         this.chartProps.valueline = valueline;
@@ -455,7 +452,6 @@ export class AppComponent implements OnInit {
         this.chartProps.xAxis = xAxis;
         this.chartProps.yAxis = yAxis;
     }
-
 
 
     drawBars() {
@@ -484,7 +480,7 @@ export class AppComponent implements OnInit {
         let canvas = d3.select('#barChart')
             .append('svg')
             .attr('width', width + margin.left + margin.right)
-            .attr('height', height + margin.top + margin.bottom)
+            .attr('height', height);
 
         let bars = canvas.selectAll('g')
             .data(this.totalDogodtkiPerYear)
@@ -506,8 +502,8 @@ export class AppComponent implements OnInit {
             .on('click', klik);
 
 
-        function goback(){
-            console.log('goin back')
+        function goback() {
+            console.log('goin back');
         }
 
         // COUNT LABEL ON THE BARS
@@ -567,7 +563,7 @@ export class AppComponent implements OnInit {
 
             d3.select(this).moveToFront();
 
-            console.log('THIS = ',this);
+            console.log('THIS = ', this);
 
             d3.select(this).transition()
                 .delay(900)
@@ -576,12 +572,6 @@ export class AppComponent implements OnInit {
                 .attr('height', height)
                 .attr('transform', 'translate(0,0)');
 
-            d3.select(this).append('rect').attr('width','80')
-                .attr('height', '50')
-                // .attr('fill', function (d) {
-                //     return colorScale(20);
-                // })
-                .on('click', klik);
 
             d3.select(this.parentNode).transition()
                 .delay(900)
@@ -589,9 +579,18 @@ export class AppComponent implements OnInit {
                 .ease(d3.easeSin)
                 .attr('transform', 'translate(0,0)');
 
-            d3.selectAll('.barText').style('display','none');
+            d3.selectAll('.barText').style('display', 'none');
 
-            _this.buildChart(this);
+            d3.select('#chart').transition()
+                .delay(900)
+                .duration(600)
+                // .ease(d3.easeSin)
+                .attr('style', 'display:block;opacity:1;position: absolute;top: 180px;animation:fadein 3s');
+
+            // _this.chartElement.nativeElement.style.animation = 'fadein 5s';
+            // _this.chartElement.nativeElement.style.display = 'block';
+            // _this.chartElement.nativeElement.style.opacity = '1';
+
         }
 
         d3.selection.prototype.moveToFront = function () {
@@ -617,10 +616,8 @@ export class AppComponent implements OnInit {
 
     updateChart() {
 
-        this.chartTitle = 'Starost povzrocitelja';
+        // this.formatDate();
 
-        this.formatDate();
-        console.log(this.dogodki);
         // Scale the range of the data again
         this.chartProps.x.domain(d3.extent(this.dogodki, function (d) {
             if (d.DatumPN instanceof Date) {
@@ -637,11 +634,11 @@ export class AppComponent implements OnInit {
 
         // Make the changes to the line chart
         this.chartProps.svg.select('.line.line1') // update the line
-            .attr('d', this.chartProps.valueline(this.dogodki))
+            .attr('d', this.chartProps.valueline(this.dataPass))
             .style('display', 'block');
 
-        this.chartProps.svg.select('.line.line2') // update the line
-            .attr('d', this.chartProps.valueline2(this.dogodki));
+        // this.chartProps.svg.select('.line.line2') // update the line
+        //     .attr('d', this.chartProps.valueline2(this.dogodki));
 
         this.chartProps.svg.select('.x.axis') // update x axis
             .call(this.chartProps.xAxis);

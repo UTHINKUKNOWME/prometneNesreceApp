@@ -10,32 +10,4 @@
 <button mat-raised-button (click)="drawBars()" text="DRAWADSA"></button>
 <div id="barChart"></div>
 
-<div #chart></div>
-
-<!--<ul *ngFor="let dogodek of dogodki">-->
-    <!--<div>-->
-        <!--Dogodek: {{dogodek.StevilkaZadeve}}-->
-    <!--</div>-->
-    <!--<div>-->
-        <!--Datum: {{dogodek.DatumPN}}-->
-    <!--</div>-->
-    <!--<div *ngIf="dogodek.Povzrocitelj.length > 0">-->
-        <!--<div>-->
-            <!--Spol povzrocitelja: {{dogodek.Povzrocitelj[0].Spol}}-->
-        <!--</div>-->
-    <!--</div>-->
-    <!--<div>-->
-        <!--Starost povzrocitelja: {{dogodek.Povzrocitelj[0].Starost}}-->
-    <!--</div>-->
-    <!--<div *ngIf="dogodek.Udelezenec.length > 0">-->
-        <!--<div>-->
-            <!--Spol udelezenca: {{dogodek.Udelezenec[0].Spol}}-->
-        <!--</div>-->
-        <!--<div>-->
-            <!--Starost udelezenca: {{dogodek.Udelezenec[0].Starost}}-->
-        <!--</div>-->
-    <!--</div>-->
-<!--</ul>-->
-
-
-
+<div id="chart"  #chart style="position: absolute;top: 180px;opacity: 0;display: none"></div>
