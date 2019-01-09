@@ -6,11 +6,15 @@ import * as d3 from 'd3';
 import {DogodkiService} from './dogodki.service';
 import {Povzrocitelj} from './models/Povzrocitelj';
 import {Udelezenec} from './models/Udelezenec';
+import {max} from 'rxjs/operators';
+import {animate, state, style, transition, trigger} from '@angular/animations';
+import {run} from 'tslint/lib/runner';
 
 @Component({
     selector: 'app-root',
     templateUrl: './app.component.html',
-    styleUrls: ['./app.component.css']
+    styleUrls: ['./app.component.css'],
+
 })
 export class AppComponent implements OnInit {
 
@@ -21,12 +25,19 @@ export class AppComponent implements OnInit {
 
     first: boolean = true;
 
-    showCHART: boolean = false;
+    selectedValue: string = 'okolisce';
 
-    chartTitle: string = 'Vozniski staz';
+    goBack: boolean = false;
 
-    dogodki: Dogodek[] = [];
     dataPass: any;
+    dataSelect: any;
+    dataNajpogostejse: any;
+    dataCompare: any;
+
+    yearATM: string = '';
+
+    chartYLabel: string = '';
+    chartXLabel: string = '';
 
     totalDogodtkiPerYear: any[] = [];
     @ViewChild('chart')
@@ -35,7 +46,14 @@ export class AppComponent implements OnInit {
     private svgElement: HTMLElement;
     private chartProps: any;
 
-    title = 'PrometnaVarnostApp';
+
+    toggle1color = 'accent';
+    toggle1checked = false;
+    toggle1disabled = false;
+    togglecheckedM = false;
+    togglecheckedZ = false;
+
+    title = 'Prometne nesreče v Sloveniji';
 
     constructor(private cd: ChangeDetectorRef,
                 private dogodkiService: DogodkiService
@@ -43,6 +61,54 @@ export class AppComponent implements OnInit {
         if (!this.client) {
             this.connect();
         }
+    }
+
+    getYear() {
+        return parseInt(this.yearATM);
+    }
+
+    refresh() {
+        this.goBack = false;
+        this.toggle1checked = false;
+        d3.select('#backBtn').transition()
+            .duration(200)
+            .ease(d3.easeSin)
+            .style('opacity', 0);
+        d3.select('#chart').transition()
+            .duration(400)
+            .ease(d3.easeSin)
+            .style('opacity', '0');
+        d3.select('#piechart').transition()
+            .duration(200)
+            .ease(d3.easeSin)
+            .style('opacity', '0');
+        d3.select('#barChart').transition()
+            .duration(400)
+            .ease(d3.easeSin)
+            .style('opacity', '0');
+        d3.select('#selecter').transition()
+            .duration(400)
+            .ease(d3.easeSin)
+            .style('opacity', '0')
+            .style('display', 'none');
+        d3.select('#pieText').transition()
+            .duration(400)
+            .ease(d3.easeSin)
+            .style('opacity', '0')
+            .style('display', 'none');
+        d3.select('#togglesDIV').transition()
+            .duration(400)
+            .ease(d3.easeSin)
+            .style('opacity', '0')
+            .style('display', 'none');
+
+        setTimeout(() => {
+            d3.select('#piechart').selectAll('*').remove();
+            d3.select('#chart').selectAll('*').remove();
+            d3.select('#barChart').selectAll('*').remove();
+            this.countAgg();
+        }, 500);
+
     }
 
     private connect() {
@@ -59,102 +125,24 @@ export class AppComponent implements OnInit {
         });
     }
 
-
-    filter(query: string): any {
-
-        this.client.search({
-                index: this.index,
-                size: 10000,
-                // q: query,
-                // q: 'Leto:2011'
-                // q: 'Povzrocitelj.Povzrocitelj1.Starost:29'
-                // q:'DatumPN:2013-02-13'
-                // q: 'StevilkaZadeve:760186'
-                // body: {
-                //     query: {
-                //         range: {
-                //             DatumPN: {
-                //                 gte: '2015-02-01',
-                //                 lte: '2015-12-05'
-                //             }
-                //         }
-                //     }
-                // }
-            }
-        ).then(res => {
-            let data = res.hits.hits;
-            this.dogodki = [];
-            for (let i = 0; i < data.length; i++) {
-
-                // for the first chart the dogodek has to have povzrocitelj
-                // udelezenec in ura
-                if (data[i]._source.Povzrocitelj.length > 0 && data[i]._source.Udelezenec.length > 0 && data[i]._source.UraPN != '') {
-                    let dogodek: Dogodek = data[i]._source;
-
-                    // handle the array of povzrocitelji
-                    let povzrocitelji: Povzrocitelj[] = [];
-                    for (let p in data[i]._source.Povzrocitelj) {
-                        let povz: Povzrocitelj = data[i]._source.Povzrocitelj[p];
-                        povzrocitelji.push(povz);
-                    }
-                    dogodek.Povzrocitelj = povzrocitelji;
-
-                    // handle the array of povzrocitelji
-                    let udelezenci: Udelezenec[] = [];
-                    for (let p in data[i]._source.Udelezenec) {
-                        let udel: Udelezenec = data[i]._source.Udelezenec[p];
-                        udelezenci.push(udel);
-                    }
-                    dogodek.Udelezenec = udelezenci;
-                    this.dogodki.push(dogodek);
-
-                }
-            }
-            if (this.first) {
-                this.first = false;
-                // this.buildChart();
-            } else {
-                this.updateChart();
-            }
-
-        });
-    }
-
-    multipleSearch(): any {
-
-        this.client.search({
-            index: this.index,
-            body: {
-                query: {
-                    bool: {
-                        should: [
-                            {match: {Leto: '2011'}},
-                            {match: {Leto: '2012'}},
-                            {match: {Leto: '2013'}},
-                            {match: {Leto: '2014'}},
-                            {match: {Leto: '2015'}}
-                        ]
-                    }
-                }
-            }
-        }).then(res => {
-            // console.log('res = ' + res);
-        });
-    }
-
-
     countAgg() {
         this.client.search({
                 index: this.index,
                 body: {
                     query: {
                         'match_all': {}
+                        // range:{
+                        //     Leto: {
+                        //         gte: 2010,
+                        //         lte: 2017
+                        //     }
+                        // }
                     },
                     aggs: {
                         poLetih: {
                             terms: {
                                 field: 'Leto',
-                                size: 13
+                                size: 25
                             }
                         }
                     }
@@ -162,18 +150,23 @@ export class AppComponent implements OnInit {
             }
         ).then(res => {
             this.totalDogodtkiPerYear = res.aggregations.poLetih.buckets;
-            // console.log('AGG URA = '+ JSON.stringify(aggregationsUra));
+            console.log('buckets = ' + this.totalDogodtkiPerYear.length);
 
-            this.drawBars();
+            this.drawBars(this.totalDogodtkiPerYear[0].doc_count);
         });
     }
 
-    filterPoUrah(query: string): any {
+    filterPoUrah(year: string, update: boolean = false): any {
         this.client.search({
                 index: this.index,
                 body: {
                     query: {
-                        'match_all': {}
+                        range: {
+                            Leto: {
+                                gte: year,
+                                lte: year
+                            }
+                        }
                     },
                     aggs: {
                         poUrah: {
@@ -189,16 +182,67 @@ export class AppComponent implements OnInit {
             let aggregationsUra = res.aggregations.poUrah.buckets;
             this.dataPass = aggregationsUra;
             console.log(aggregationsUra);
-            this.buildChart();
+            this.chartYLabel = 'Število nesrečov';
+            this.chartXLabel = 'Ure (0-24)';
+            this.sortPoUrah();
+            if (update) {
+                this.updateChart();
+            } else {
+                this.buildChart();
+            }
         });
     }
 
-    filterPoKlasifikaciji(query: string): any {
+    filterPoUrahU(year: string, match: any[], range: any): any {
         this.client.search({
                 index: this.index,
                 body: {
                     query: {
-                        'match_all': {}
+                        bool: {
+                            must: match,
+                            filter: {
+                                bool: {
+                                    should: [
+                                        {range: range},
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    aggs: {
+                        poUrah: {
+                            terms: {
+                                field: 'UraPN',
+                                size: 24
+                            }
+                        }
+                    }
+                }
+            }
+        ).then(res => {
+            let aggregationsUra = res.aggregations.poUrah.buckets;
+            this.dataPass = aggregationsUra;
+            console.log(aggregationsUra);
+            this.chartYLabel = 'Število nesrečov';
+            this.chartXLabel = 'Ure (0-24)';
+            this.sortPoUrah();
+            this.updateChart();
+
+        });
+    }
+
+    filterPoKlasifikaciji(year: number): any {
+        this.client.search({
+                index: this.index,
+                body: {
+                    query: {
+                        // 'match_all': {}
+                        range: {
+                            Leto: {
+                                gte: year,
+                                lte: year
+                            }
+                        }
                     },
                     aggs: {
                         poKlasi: {
@@ -219,12 +263,15 @@ export class AppComponent implements OnInit {
     }
 
 
-    filterPoVremenu(query: string): any {
+    filterPoVremenu(year: number): any {
         this.client.search({
                 index: this.index,
                 body: {
                     query: {
-                        'match_all': {}
+                        bool: {
+                            must: {match: {'KlasifikacijaNesrece.keyword': 'S SMRTNIM IZIDOM'}},
+                            filter: {range: {'Leto': {'gte': year, 'lte': year}}}
+                        }
                     },
                     aggs: {
                         poVzroku: {
@@ -238,22 +285,29 @@ export class AppComponent implements OnInit {
             }
         ).then(res => {
             let aggregations = res.aggregations.poVzroku.buckets;
-            this.dataPass = aggregations;
+            this.dataSelect = aggregations;
+            this.drawPie();
             console.log(aggregations);
         });
     }
 
-    filterPoNaselju(query: string): any {
+    filterPoNaselju(year: number): any {
         this.client.search({
                 index: this.index,
                 body: {
                     query: {
-                        'match_all': {}
+                        // 'match_all': {}
+                        range: {
+                            Leto: {
+                                gte: year,
+                                lte: year
+                            }
+                        }
                     },
                     aggs: {
                         poSpolu: {
                             terms: {
-                                field: 'VNaselju.Spol.keyword',
+                                field: 'VNaselju.keyword',
                                 size: 2
                             }
                         }
@@ -267,23 +321,58 @@ export class AppComponent implements OnInit {
         });
     }
 
-    // count(leto: string): any {
-    //     this.client.count({
-    //         index: this.index,
-    //         body: {
-    //             query: {term: {Leto: leto}}
-    //         }
-    //     }).then(res => {
-    //         // console.log('res = ' + res.count);
-    //         // divide by 1000 for scaling
-    //         let count = res.count / 100;
-    //         let dogodek = {count: count, year: leto};
-    //         this.totalDogodtkiPerYear.push(dogodek);
-    //         if (leto == '2015') {
-    //
-    //         }
-    //     });
-    // }
+    filterNajpogostejsihStarosti() {
+        this.client.search({
+                index: this.index,
+                body: {
+                    query: {
+                        'match': {
+                            'Udelezenec.Vloga': 'Povzročitelj'
+                        }
+                    },
+                    aggs: {
+                        agregacija: {
+                            terms: {
+                                field: 'Udelezenec.Starost',
+                                size: 5
+                            }
+                        }
+                    }
+                }
+            }
+        ).then(res => {
+            this.dataSelect = res.aggregations.agregacija.buckets;
+            this.drawPie();
+            console.log('najpogostejse', this.dataNajpogostejse);
+        });
+    }
+
+    filterComparePovzrociteljSpol() {
+        this.client.search({
+                index: this.index,
+                body: {
+                    query: {
+                        'match': {
+                            'Udelezenec.Vloga': 'Povzročitelj'
+                        }
+                    },
+                    aggs: {
+                        poSpolu: {
+                            terms: {
+                                field: 'Udelezenec.Spol.keyword',
+                                size: 2
+                            }
+                        }
+                    }
+
+                }
+            }
+        ).then(res => {
+            this.dataSelect = res.aggregations.poSpolu.buckets;
+            this.drawPie();
+            console.log('dataCompare', this.dataCompare);
+        });
+    }
 
     ngOnInit() {
         this.isAvailable().then(() => {
@@ -297,29 +386,69 @@ export class AppComponent implements OnInit {
             this.cd.detectChanges();
         });
 
-        this.filterPoUrah('');
-
         this.countAgg();
-        // this.filter('StevilkaZadeve:693354');
-        // this.filter('Povzrocitelj.Starost:29');
-        // this.filter('VremenskeOkoliscine:JASNO');
-        // this.filter('VremenskeOkoliscine:JASNO');
-        // this.multipleSearch();
-        // this.filter('VremenskeOkoliscine:JASNO AND DatumPN:2013-[?:.*]-02');
+
     }
 
+    filterSelect(leto: any, selectString: string, size: number) {
+        this.client.search({
+                index: this.index,
+                body: {
+                    query: {
+                        bool: {
+                            must: {match: {'KlasifikacijaNesrece.keyword': 'S SMRTNIM IZIDOM'}},
+                            filter: {range: {'Leto': {'gte': leto, 'lte': leto}}}
+                        }
 
-    formatDate() {
-        this.dogodki.forEach(ms => {
-            if (typeof ms.DatumPN === 'string') {
-                ms.DatumPN = new Date(ms.DatumPN);
-                ms.DatumPN.setHours(ms.UraPN);
+                    },
+                    aggs: {
+                        poPasu: {
+                            terms: {
+                                field: selectString,
+                                size: size
+                            }
+                        }
+                    }
+
+                }
             }
-        });
-        this.dogodki.sort((a: Dogodek, b: Dogodek) => {
-            return a.DatumPN.getTime() - b.DatumPN.getTime();
+        ).then(res => {
+            this.dataSelect = res.aggregations.poPasu.buckets;
+            this.drawPie();
+            console.log('filterSelect', this.dataSelect);
+
         });
     }
+
+
+    onChange(newValue) {
+        console.log('THE NEW VALUE IS', newValue);
+        console.log('YEAR', this.getYear());
+        d3.select('#piechart').selectAll('*').remove();
+        if (newValue == 'naselje') {
+            this.filterSelect(this.yearATM, 'VNaselju.keyword', 2);
+        } else if (newValue == 'pas') {
+            this.filterSelect(this.yearATM, 'Udelezenec.UporabaVarnostnegaPasu.keyword', 2);
+        } else if (newValue == 'okolisce') {
+            this.filterSelect(this.yearATM, 'VremenskeOkoliscine.keyword', 5);
+        } else if (newValue == 'tipnesrece') {
+            this.filterSelect(this.yearATM, 'TipNesrece.keyword', 6);
+        }
+
+
+    }
+
+    // formatDate() {
+    //     this.dogodki.forEach(ms => {
+    //         if (typeof ms.DatumPN === 'string') {
+    //             ms.DatumPN = new Date(ms.DatumPN);
+    //             ms.DatumPN.setHours(ms.UraPN);
+    //         }
+    //     });
+    //     this.dogodki.sort((a: Dogodek, b: Dogodek) => {
+    //         return a.DatumPN.getTime() - b.DatumPN.getTime();
+    //     });
+    // }
 
 
     sortPoUrah() {
@@ -333,9 +462,11 @@ export class AppComponent implements OnInit {
         this.chartProps = {};
         // this.formatDate();
         this.sortPoUrah();
-        console.log(this.dataPass);
+
+        console.log('CHART DATA', this.dataPass);
+
         // Set the dimensions of the canvas / graph
-        let margin = {top: 30, right: 50, bottom: 30, left: 50},
+        let margin = {top: 30, right: 100, bottom: 80, left: 50},
             width = window.innerWidth - margin.left - margin.right,
             height = 400 - margin.top - margin.bottom;
 
@@ -360,7 +491,6 @@ export class AppComponent implements OnInit {
                 if (d.Povzrocitelj.length > 0) {
                     return _this.chartProps.y(d.Povzrocitelj[0].Starost);
                 } else {
-                    console.log('HERE VALUE LINE y');
                     return _this.chartProps.y(0);
                 }
             });
@@ -378,7 +508,6 @@ export class AppComponent implements OnInit {
                 if (d.Povzrocitelj.length > 0) {
                     return _this.chartProps.y(d.Povzrocitelj[0].VozniskiStazVLetih);
                 } else {
-                    console.log('HERE VALUE LINE y');
                     return _this.chartProps.y(0);
                 }
             });
@@ -396,9 +525,9 @@ export class AppComponent implements OnInit {
         // let svg = d3.select(element)
             .append('svg')
             .attr('width', width + margin.left + margin.right)
-            .attr('height', height + margin.top + margin.bottom)
-            .append('g')
-            .attr('transform', `translate(${margin.left},${margin.top})`);
+            .attr('height', height + margin.top + margin.bottom);
+        // .append('g')
+        // .attr('transform', `translate(${margin.left + 30},${margin.top})`);
 
         // Scale the range of the data
         // this.chartProps.x.domain(
@@ -411,6 +540,8 @@ export class AppComponent implements OnInit {
         //
         //     }));
 
+        var g = svg.append('g').attr('transform', `translate(${margin.left + 30},${margin.top})`);
+
         this.chartProps.x.domain(d3.extent(_this.dataPass, function (d) {
             return d.key;
         }));
@@ -420,9 +551,11 @@ export class AppComponent implements OnInit {
         })]);
 
         // Add the valueline path.
-        svg.append('path')
+        g.append('path')
             .attr('class', 'line line1')
             .style('stroke', '#f4f4f4')
+            .style('stroke-width', '2px')
+            .attr('stroke-linejoin', 'round')
             .style('fill', 'none')
             .attr('d', poUrah(_this.dataPass));
 
@@ -434,35 +567,134 @@ export class AppComponent implements OnInit {
         //     .attr('d', vozniskiStazVLetih(_this.dogodki));
 
 
+        var focus = g.append('g')
+            .attr('class', 'focus')
+            .style('display', 'none');
+
+        focus.append('line')
+            .attr('class', 'x-hover-line hover-line')
+            .attr('y1', 0)
+            .attr('y2', height);
+
+        focus.append('line')
+            .attr('class', 'y-hover-line hover-line')
+            .attr('x1', width)
+            .attr('x2', width);
+
+        focus.append('circle')
+            .style('fill', 'white')
+            .attr('r', 7.5);
+
+        focus.append('text')
+        // .attr("x", )
+            .attr('y', -20)
+            .style('fill', 'white')
+            .attr('text-anchor', 'middle')
+            .attr('dy', '.31em');
+
+        svg.append('rect')
+            .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
+            .attr('class', 'overlay')
+            .attr('width', width)
+            .attr('height', height)
+            .style('fill', 'none')
+            .style('pointer-events', 'all')
+            .on('mouseover', function () {
+                focus.style('display', null);
+            })
+            .on('mouseout', function () {
+                focus.style('display', 'none');
+            })
+            .on('mousemove', mousemove);
+
+        // var parseTime = d3.timeParse("%Y")
+        let bisectDate = d3.bisector(function (d) {
+            return d.key;
+        }).left;
+
+        function mousemove() {
+            var x0 = _this.chartProps.x.invert(d3.mouse(this)[0]),
+                i = bisectDate(_this.dataPass, x0, 1),
+                d0 = _this.dataPass[i - 1],
+                d1 = _this.dataPass[i],
+                d = x0 - d0.key > d1.key - x0 ? d1 : d0;
+            focus.attr('transform', 'translate(' + _this.chartProps.x(d.key) + ',' + _this.chartProps.y(d.doc_count) + ')');
+            focus.select('text').text(function () {
+                return d.doc_count;
+            });
+            focus.select('.x-hover-line').attr('y2', height - _this.chartProps.y(d.doc_count));
+            focus.select('.y-hover-line').attr('x2', width + width);
+        }
+
         // Add the X Axis
-        svg.append('g')
+        let xAxisG = g.append('g')
             .attr('class', 'x axis')
             .attr('transform', `translate(0,${height})`)
-            .call(xAxis);
+            .call(customXAxis);
 
         // Add the Y Axis
-        svg.append('g')
+        let yAxisG = g.append('g')
             .attr('class', 'y axis')
-            .call(yAxis);
+            .call(customYAxis);
+
 
         // Setting the required objects in chartProps so they could be used to update the chart
         this.chartProps.svg = svg;
-        this.chartProps.valueline = valueline;
+        this.chartProps.valueline = poUrah;
         this.chartProps.valueline2 = vozniskiStazVLetih;
         this.chartProps.xAxis = xAxis;
         this.chartProps.yAxis = yAxis;
+
+        function customYAxis(g) {
+            g.call(yAxis);
+            g.append('text')
+                .attr('class', 'axis-label')
+                .attr('y', -50)
+                .attr('x', -height / 2)
+                .attr('transform', `rotate(-90)`)
+                .attr('text-anchor', 'middle')
+                .style('font-family', 'sans-serif')
+                .style('font-size', '2.5em')
+                .style('fill', 'white')
+                .text(_this.chartYLabel);
+            // g.select(".domain").remove();
+            g.select('.domain').attr('stroke', '#f4f4f4');
+            g.selectAll('.tick line').attr('stroke', '#f4f4f4');
+            // g.selectAll(".tick text").attr("x", 4).attr("dy", -4);
+            g.selectAll('.tick text').attr('color', 'white');
+        }
+
+        function customXAxis(g) {
+            g.call(xAxis);
+            g.append('text')
+                .attr('class', 'axis-label')
+                .attr('y', 50)
+                .attr('x', width / 2)
+                .attr('text-anchor', 'middle')
+                .style('font-family', 'sans-serif')
+                .style('font-size', '2.5em')
+                .style('fill', 'white')
+                .text(_this.chartXLabel);
+            // g.select(".domain").remove();
+            g.select('.domain').attr('stroke', '#f4f4f4');
+            g.selectAll('.tick:not(:first-of-type) line').attr('stroke', '#f4f4f4');
+            g.selectAll('.tick line').attr('stroke', '#f4f4f4');
+
+            // g.selectAll(".tick text").attr("x", 4).attr("dy", -4);
+            g.selectAll('.tick text').attr('color', 'white');
+        }
     }
 
-
-    drawBars() {
+    drawBars(maxScale: number) {
 
         // BARS
+        console.log('MAX SCALE = ', maxScale);
 
         let _this = this;
         let margin = {top: 30, right: 20, bottom: 30, left: 20},
             width = window.innerWidth - margin.left - margin.right,
-            height = window.innerHeight - margin.top - margin.bottom;
-
+            // height = window.innerHeight - margin.top - margin.bottom;
+            height = 1000;
         // var width = window.innerWidth;
         // var height = window.innerHeight;
 
@@ -470,7 +702,7 @@ export class AppComponent implements OnInit {
         let rectArray = [];
 
         let widthScale = d3.scaleLinear()
-            .domain([0, 1000])    // originalni razpon vrednosti
+            .domain([0, maxScale / 100])    // originalni razpon vrednosti
             .range([0, width]);  // preslikani razpon vrednosti
 
         let colorScale = d3.scaleLinear()
@@ -500,11 +732,6 @@ export class AppComponent implements OnInit {
                 return colorScale(d.doc_count / 100);
             })
             .on('click', klik);
-
-
-        function goback() {
-            console.log('goin back');
-        }
 
         // COUNT LABEL ON THE BARS
         bars.append('text')
@@ -547,6 +774,18 @@ export class AppComponent implements OnInit {
         function klik() {
             let m = d3.mouse(this);
 
+            _this.goBack = true;
+
+            console.log('THE CLICKED YEAR = ', this.parentNode.children[2].innerHTML);
+            let year = this.parentNode.children[2].innerHTML;
+            _this.yearATM = year;
+
+            d3.select('#backBtn').transition()
+                .delay(900)
+                .duration(800)
+                .ease(d3.easeSin)
+                .style('opacity', 1);
+
             bars.selectAll('rect').transition()
                 .duration(1300)       // trajanje tranzicije v milisekundah
                 .ease(d3.easeBounce)  // prehod v gibanju (se odbije)
@@ -581,16 +820,44 @@ export class AppComponent implements OnInit {
 
             d3.selectAll('.barText').style('display', 'none');
 
+            _this.filterPoUrah(year);
+            // _this.filterPoKlasifikaciji(year);
+            _this.filterPoVremenu(year);
+            // _this.filterPoNaselju(year);
+            // _this.filterComparePovzrociteljSpol();
+            // _this.filterNajpogostejsihStarosti();
+
             d3.select('#chart').transition()
-                .delay(900)
-                .duration(600)
+                .delay(1000)
+                // .duration(600)
                 // .ease(d3.easeSin)
-                .attr('style', 'display:block;opacity:1;position: absolute;top: 180px;animation:fadein 3s');
+                .attr('style', 'display:block;opacity:1;position: absolute;top: 150px;animation:fadein 3s');
 
-            // _this.chartElement.nativeElement.style.animation = 'fadein 5s';
-            // _this.chartElement.nativeElement.style.display = 'block';
-            // _this.chartElement.nativeElement.style.opacity = '1';
+            d3.select('#piechart').transition()
+                .delay(1150)
+                .duration(500)
+                .ease(d3.easeSin)
+                .attr('style', 'display:block;opacity:1;position: absolute;top: 600px;animation:fadein 3s');
 
+            d3.select('#selecter').transition()
+                .delay(1150)
+                .duration(500)
+                .ease(d3.easeSin)
+                .attr('style', 'display:block;opacity:1;position: absolute;top: 550px;left: 200px;width: 230px;animation:fadein 3s');
+
+            d3.select('#pieText').transition()
+                .delay(1150)
+                .duration(500)
+                .ease(d3.easeSin)
+                .attr('style', 'display:block;opacity:1;position: absolute;top: 1050px;left: 160px;width: 100%;font-family: sans-serif;color: white;animation:fadein 3s');
+
+            if (parseInt(year) > 2004) {
+                d3.select('#togglesDIV').transition()
+                    .delay(1150)
+                    .duration(500)
+                    .ease(d3.easeSin)
+                    .attr('style', 'display:block;opacity:1;position: absolute;top: 550px;left: 60vw;width: 500px;height: 100%;animation:fadein 3s');
+            }
         }
 
         d3.selection.prototype.moveToFront = function () {
@@ -611,40 +878,299 @@ export class AppComponent implements OnInit {
             d3.select(this)
                 .attr('opacity', 1);
         }
-    }
 
+        d3.select('#barChart').transition()
+            .delay(200)
+            .duration(800)
+            .ease(d3.easeSin)
+            .style('opacity', '1');
+    }
 
     updateChart() {
 
-        // this.formatDate();
+        let _this = this;
+        // Get the data again
+
+        // Set the dimensions of the canvas / graph
+        let margin = {top: 30, right: 100, bottom: 80, left: 50},
+            width = window.innerWidth - margin.left - margin.right,
+            height = 400 - margin.top - margin.bottom;
 
         // Scale the range of the data again
-        this.chartProps.x.domain(d3.extent(this.dogodki, function (d) {
-            if (d.DatumPN instanceof Date) {
-                return d.DatumPN.getTime();
-            }
+        this.chartProps.x.domain(d3.extent(_this.dataPass, function (d) {
+            return d.key;
         }));
-
-        this.chartProps.y.domain([0, d3.max(this.dogodki, function (d) {
-            return Math.max(0, d.Povzrocitelj[0].Starost);
+        this.chartProps.y.domain([0, d3.max(_this.dataPass, function (d) {
+            // return Math.max(0, d.doc_count);
+            return d.doc_count * 1.10;
         })]);
 
         // Select the section we want to apply our changes to
-        this.chartProps.svg.transition();
+        var svg = d3.select(this.chartElement.nativeElement).transition();
+
+
+        // Define po urah
+        let poUrah = d3.line<any>()
+            .x(function (d) {
+                return _this.chartProps.x(d.key);
+            })
+            .y(function (d) {
+                return _this.chartProps.y(d.doc_count);
+            });
+
+        // Define the axes
+        let xAxis = d3.axisBottom(this.chartProps.x);
+        let yAxis = d3.axisLeft(this.chartProps.y).ticks(5);
+
+        function customYAxis(g) {
+            g.call(yAxis);
+            g.append('text')
+                .attr('class', 'axis-label')
+                .attr('y', -50)
+                .attr('x', -height / 2)
+                .attr('transform', `rotate(-90)`)
+                .attr('text-anchor', 'middle')
+                .style('font-family', 'sans-serif')
+                .style('font-size', '2.5em')
+                .style('fill', 'white')
+                .text(_this.chartYLabel);
+            // g.select(".domain").remove();
+            g.select('.domain').attr('stroke', '#f4f4f4');
+            g.selectAll('.tick line').attr('stroke', '#f4f4f4');
+            // g.selectAll(".tick text").attr("x", 4).attr("dy", -4);
+            g.selectAll('.tick text').attr('color', 'white');
+        }
+
+        function customXAxis(g) {
+            g.call(xAxis);
+            g.append('text')
+                .attr('class', 'axis-label')
+                .attr('y', 50)
+                .attr('x', width / 2)
+                .attr('text-anchor', 'middle')
+                .style('font-family', 'sans-serif')
+                .style('font-size', '2.5em')
+                .style('fill', 'white')
+                .text(_this.chartXLabel);
+            // g.select(".domain").remove();
+            g.select('.domain').attr('stroke', '#f4f4f4');
+            g.selectAll('.tick:not(:first-of-type) line').attr('stroke', '#f4f4f4');
+            g.selectAll('.tick line').attr('stroke', '#f4f4f4');
+
+            // g.selectAll(".tick text").attr("x", 4).attr("dy", -4);
+            g.selectAll('.tick text').attr('color', 'white');
+        }
+
+
+        // Select the section we want to apply our changes to
+        let tran = this.chartProps.svg.transition();
 
         // Make the changes to the line chart
-        this.chartProps.svg.select('.line.line1') // update the line
-            .attr('d', this.chartProps.valueline(this.dataPass))
+        tran.select('.line.line1').duration(700) // update the line
+            .attr('d', poUrah(this.dataPass))
             .style('display', 'block');
 
         // this.chartProps.svg.select('.line.line2') // update the line
         //     .attr('d', this.chartProps.valueline2(this.dogodki));
 
-        this.chartProps.svg.select('.x.axis') // update x axis
-            .call(this.chartProps.xAxis);
+        console.log(tran);
 
-        this.chartProps.svg.select('.y.axis') // update y axis
-            .call(this.chartProps.yAxis);
+        tran.select('.x axis')
+            .duration(1700)// update x axis
+            .call(xAxis).select('.domain').attr('stroke', '#f4f4f4')
+            .selectAll('.tick:not(:first-of-type) line').attr('stroke', '#f4f4f4')
+            .selectAll('.tick line').attr('stroke', '#f4f4f4')
+            .selectAll('.tick text').attr('color', 'white');
+
+        tran.select('.y axis')
+            .duration(1700)// update y axis
+            .call(yAxis).select('.domain').attr('stroke', '#f4f4f4')
+            .selectAll('.tick:not(:first-of-type) line').attr('stroke', '#f4f4f4')
+            .selectAll('.tick line').attr('stroke', '#f4f4f4')
+            .selectAll('.tick text').attr('color', 'white');
+
+
+    }
+
+    drawPie() {
+
+        let _this = this;
+
+        var divisionRatio = 2.5;
+        var legendoffset = 0;
+        let chart = d3.select('#piechart');
+        let width = 700,
+            height = 500,
+            radius = Math.min(width, height) / divisionRatio;
+        var rcolor = d3.scaleOrdinal().range(['steelblue', 'lightgreen', 'cadetblue', 'powderblue', 'khaki', 'olive']);
+
+        let arc = d3.arc()
+            .outerRadius(radius)
+            .innerRadius(radius - 200);
+
+        let arcOver = d3.arc()
+            .outerRadius(radius + 10)
+            .innerRadius(radius - 200);
+
+        chart = chart
+            .append('svg')  //append svg element inside #chart
+            .attr('width', width)    //set width
+            .attr('height', height)  //set height
+            .append('g')
+            .attr('transform', 'translate(' + (width / divisionRatio) + ',' + ((height / divisionRatio) + 30) + ')');
+
+        var pie = d3.pie(this.dataSelect)
+            .sort(null)
+            .value(function (d) {
+                return d.doc_count;
+            });
+
+        var g = chart.selectAll('.arc')
+            .data(pie(this.dataSelect))
+            .enter().append('g')
+            .attr('class', 'arc');
+
+        var count = 0;
+
+        var path = g.append('path')
+            .attr('d', arc)
+            .attr('id', function (d) {
+                return 'arc-' + (count++);
+            })
+            .style('opacity', function (d) {
+                return d.data['op'];
+            });
+
+        path.on('mouseenter', function (d) {
+            d3.select(this)
+                .attr('stroke', 'white')
+                .transition()
+                .duration(200)
+                .attr('d', arcOver)
+                .attr('stroke-width', 1);
+            d3.select(this.parentNode).append('text')
+                .attr('transform', function (d) {
+                    return 'translate(' + arc.centroid(d) + ')';
+                })
+                .attr('dy', '.35em')
+                .style('text-anchor', 'end')
+                .style('opacity', 1)
+                .style('pointer-events', 'none')
+                .style('z-index', '1')
+                .style('font', '20px sans-serif')
+                .text(function (d) {
+                    return d.data['doc_count'];
+                });
+
+        }).on('mouseleave', function (d) {
+            d3.select(this).transition()
+                .duration(200)
+                .attr('d', arc)
+                .attr('stroke', 'none');
+            d3.select(this.parentNode).select('text').remove();
+        });
+
+        path.append('svg:title')
+            .text(function (d) {
+                return d.data['key'] + ' (' + d.data['doc_count'] + ')';
+            });
+
+        // PATH STYLING
+        path.style('fill', function (d) {
+            return rcolor(d.data['key']);
+        });
+        path.style('stroke', 'white');
+        path.style('stroke-width', '2');
+
+
+        // g.append('text')
+        //     .attr('transform', function (d) {
+        //         return 'translate(' + arc.centroid(d) + ')';
+        //     })
+        //     .attr('dy', '.35em')
+        //     .style('text-anchor', 'middle')
+        //     .style('opacity', 1)
+        //     .style('font', '20px sans-serif')
+        //     .text(function (d) {
+        //         return d.data['doc_count'];
+        //     });
+        count = 0;
+
+
+        var legend = chart.selectAll('.legend')
+            .data(this.dataSelect).enter()
+            .append('g').attr('class', 'legend')
+            .attr('legend-id', function (d) {
+                return count++;
+            })
+            .attr('transform', function (d, i) {
+                return 'translate(15,' + (parseInt('-' + (_this.dataSelect.length * 10)) + i * 28 + legendoffset) + ')';
+            });
+        // .style('cursor', 'pointer');
+
+
+        var leg = legend.append('rect');
+
+        leg.attr('x', width / 2)
+            .attr('width', 18).attr('height', 18)
+            .style('fill', function (d) {
+                console.log('COLOR D', d);
+                return rcolor(d['doc_count']);
+            });
+
+        legend.append('text').attr('x', (width / 2) - 5)
+            .attr('y', 9).attr('dy', '.35em')
+            .style('text-anchor', 'end')
+            .style('font', '14px sans-serif')
+            .style('fill', 'white')
+            .style('pointer-events', 'none')
+            .text(function (d) {
+                return d.key;
+            });
+
+        leg.append('svg:title')
+            .text(function (d) {
+                return d['key'] + ' (' + d['doc_count'] + ')';
+            });
+    }
+
+    onToggleChange(type: number) {
+
+        if (this.toggle1checked && type == 1) {
+            this.togglecheckedM = false;
+            this.togglecheckedZ = false;
+            this.filterPoUrahU(this.yearATM, [{match: {'Udelezenec.Vloga': 'Povzročitelj'}}, {match: {'Leto': this.yearATM}}], {
+                'Udelezenec.VrednostAlkotesta': {
+                    'gt': 0,
+                    'lt': 5
+                }
+            });
+        } else if (this.togglecheckedM  && type == 2) {
+            this.toggle1checked = false;
+            this.togglecheckedZ = false;
+            this.filterPoUrahU(this.yearATM, [{match: {'Udelezenec.Vloga': 'Povzročitelj'}}, {match: {'Udelezenec.Spol.keyword': 'MOŠKI'}}], {
+                'Leto': {
+                    'gte': this.yearATM,
+                    'lte': this.yearATM
+                }
+            });
+        } else if (this.togglecheckedZ  && type == 3) {
+            this.togglecheckedM = false;
+            this.toggle1checked = false;
+            this.filterPoUrahU(this.yearATM, [{match: {'Udelezenec.Vloga': 'Povzročitelj'}}, {match: {'Udelezenec.Spol.keyword': 'ŽENSKI'}}], {
+                'Leto': {
+                    'gte': this.yearATM,
+                    'lte': this.yearATM
+                }
+            });
+
+        } else {
+            this.toggle1checked = false;
+            this.togglecheckedM = false;
+            this.togglecheckedZ = false;
+            this.filterPoUrah(this.yearATM, true);
+        }
+        console.log('checked ', this.toggle1checked);
     }
 
 }

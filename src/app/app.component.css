@@ -35,3 +35,42 @@
         opacity: 1;
     }
 }
+
+.nvd3 .nv-axis path {
+    fill: none;
+    stroke: wheat;
+    stroke-opacity: .75;
+    shape-rendering: crispEdges;
+}
+
+.mat-select:focus:not(.mat-select-disabled).mat-primary .mat-select-arrow,
+.mat-select:focus:not(.mat-select-disabled).mat-primary .mat-select-trigger {
+    color: white;
+}
+
+.mat-select-arrow,
+.mat-select-disabled .mat-select-value,
+.mat-select-trigger {
+    color:white;
+
+}
+
+* {
+    font-family: sans-serif;
+}
+
+.overlay {
+    fill: none;
+    pointer-events: all;
+}
+
+.toggles {
+    display: block;
+    margin-top: 20px;
+    color: white;
+}
+
+/*#togglesDIV{*/
+    /*display: flex;*/
+    /*justify-content: space-evenly;*/
+/*}*/

@@ -1,5 +1,28 @@
 /* You can add global styles to this file, and also import other style files */
-@import "~@angular/material/prebuilt-themes/indigo-pink.css";
+@import "~@angular/material/prebuilt-themes/deeppurple-amber.css";
+
 body {
     background-color: #f4f4f4;
+}
+
+
+.mat-select:focus:not(.mat-select-disabled).mat-primary .mat-select-arrow,
+.mat-select:focus:not(.mat-select-disabled).mat-primary .mat-select-trigger {
+    color: white !important;
+}
+
+.mat-select-arrow,
+.mat-select-disabled .mat-select-value-text, .mat-select-value,.mat-form-field-infix,.mat-form-field-label,
+.mat-select-trigger,.mat-form-field-flex,.mat-form-field-wrapper {
+    color: white !important;
+    font-size: large;
+
+}
+
+.mat-form-field{
+    border-bottom-color: white !important;
+}
+
+.mat-form-field-underline{
+    display: none;
 }

@@ -1,13 +1,64 @@
 <!--The content below is only a placeholder and can be replaced.-->
 <div style="text-align:center">
     <h1>
-        Welcome to {{ title }}!
+        {{ title }}
     </h1>
 </div>
 
 <h3 class="col-md-12 text-center">Elasticsearch server status: {{status}}</h3>
 <!--<h2>{{chartTitle}}</h2>-->
-<button mat-raised-button (click)="drawBars()" text="DRAWADSA"></button>
-<div id="barChart"></div>
+<button id="backBtn" mat-raised-button (click)="refresh()"
+        style="opacity:0;margin-bottom: 10px;position: absolute;top: 130px;left: 30px;">BACK
+</button>
+<div id="barChart" style="opacity: 0"></div>
 
-<div id="chart"  #chart style="position: absolute;top: 180px;opacity: 0;display: none"></div>
+<div id="chart" #chart style="position: absolute;top: 180px;opacity: 0;display: none"></div>
+
+<h3 id="pieText"
+    style="position: absolute;top: 1050px;left: 160px;width: 100%;font-family: sans-serif;color: white;opacity: 0;display: none">
+    NESREČE S SMRTNIM IZIDOM</h3>
+
+
+<mat-form-field id="selecter" class="white"
+                style="position: absolute;top: 550px;left: 210px;width: 230px;opacity: 0;display: none">
+    <mat-select placeholder="Izberite filter" [(ngModel)]="selectedValue" name="select"
+                (ngModelChange)="onChange($event)">
+        <mat-option value="pas">Uporaba Varnostnega Pasu</mat-option>
+        <mat-option value="okolisce">Vremenske Okoliscine</mat-option>
+        <mat-option value="naselje">V Naselju</mat-option>
+        <mat-option value="tipnesrece">Tip Nesrece</mat-option>
+    </mat-select>
+</mat-form-field>
+
+<div id="togglesDIV"
+     style="position: absolute;top: 550px;left: 60vw;width: 500px;height: 100%;opacity: 0;display: none">
+    <mat-slide-toggle class="toggles"
+                      [color]="toggle1color"
+                      [(ngModel)]="toggle1checked"
+                      [disabled]="toggle1disabled"
+                      (change)="onToggleChange(1)"
+    >
+        Nesreče pri kateri je povzrocitelj pod dejstvo alkohola
+    </mat-slide-toggle>
+
+    <mat-slide-toggle class="toggles"
+                      [color]="toggle1color"
+                      [(ngModel)]="togglecheckedM"
+                      [disabled]="toggle1disabled"
+                      (change)="onToggleChange(2)"
+    >
+        Nesreče pri kateri je povzrocitelj moškega spola
+    </mat-slide-toggle>
+
+    <mat-slide-toggle class="toggles"
+                      [color]="toggle1color"
+                      [(ngModel)]="togglecheckedZ"
+                      [disabled]="toggle1disabled"
+                      (change)="onToggleChange(3)"
+    >
+        Nesreče pri kateri je povzrocitelj ženskega spola
+    </mat-slide-toggle>
+
+</div>
+
+<div id="piechart" style="height:500px;width:700px;position: absolute;top: 600px;opacity: 0;display: none"></div>
