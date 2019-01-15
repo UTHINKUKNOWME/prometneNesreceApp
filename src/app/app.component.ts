@@ -905,10 +905,6 @@ export class AppComponent implements OnInit {
             return d.doc_count * 1.10;
         })]);
 
-        // Select the section we want to apply our changes to
-        var svg = d3.select(this.chartElement.nativeElement).transition();
-
-
         // Define po urah
         let poUrah = d3.line<any>()
             .x(function (d) {
@@ -921,46 +917,6 @@ export class AppComponent implements OnInit {
         // Define the axes
         let xAxis = d3.axisBottom(this.chartProps.x);
         let yAxis = d3.axisLeft(this.chartProps.y).ticks(5);
-
-        function customYAxis(g) {
-            g.call(yAxis);
-            g.append('text')
-                .attr('class', 'axis-label')
-                .attr('y', -50)
-                .attr('x', -height / 2)
-                .attr('transform', `rotate(-90)`)
-                .attr('text-anchor', 'middle')
-                .style('font-family', 'sans-serif')
-                .style('font-size', '2.5em')
-                .style('fill', 'white')
-                .text(_this.chartYLabel);
-            // g.select(".domain").remove();
-            g.select('.domain').attr('stroke', '#f4f4f4');
-            g.selectAll('.tick line').attr('stroke', '#f4f4f4');
-            // g.selectAll(".tick text").attr("x", 4).attr("dy", -4);
-            g.selectAll('.tick text').attr('color', 'white');
-        }
-
-        function customXAxis(g) {
-            g.call(xAxis);
-            g.append('text')
-                .attr('class', 'axis-label')
-                .attr('y', 50)
-                .attr('x', width / 2)
-                .attr('text-anchor', 'middle')
-                .style('font-family', 'sans-serif')
-                .style('font-size', '2.5em')
-                .style('fill', 'white')
-                .text(_this.chartXLabel);
-            // g.select(".domain").remove();
-            g.select('.domain').attr('stroke', '#f4f4f4');
-            g.selectAll('.tick:not(:first-of-type) line').attr('stroke', '#f4f4f4');
-            g.selectAll('.tick line').attr('stroke', '#f4f4f4');
-
-            // g.selectAll(".tick text").attr("x", 4).attr("dy", -4);
-            g.selectAll('.tick text').attr('color', 'white');
-        }
-
 
         // Select the section we want to apply our changes to
         let tran = this.chartProps.svg.transition();
@@ -975,20 +931,17 @@ export class AppComponent implements OnInit {
 
         console.log(tran);
 
-        tran.select('.x axis')
-            .duration(1700)// update x axis
-            .call(xAxis).select('.domain').attr('stroke', '#f4f4f4')
-            .selectAll('.tick:not(:first-of-type) line').attr('stroke', '#f4f4f4')
-            .selectAll('.tick line').attr('stroke', '#f4f4f4')
-            .selectAll('.tick text').attr('color', 'white');
+        tran.select('.x.axis')
+            .duration(900)// update x axis
+            .call(xAxis);
 
-        tran.select('.y axis')
-            .duration(1700)// update y axis
-            .call(yAxis).select('.domain').attr('stroke', '#f4f4f4')
-            .selectAll('.tick:not(:first-of-type) line').attr('stroke', '#f4f4f4')
-            .selectAll('.tick line').attr('stroke', '#f4f4f4')
-            .selectAll('.tick text').attr('color', 'white');
+        tran.select('.y.axis')
+            .duration(900)// update y axis
+            .call(yAxis);
 
+        tran.selectAll('.tick:not(:first-of-type) line').attr('stroke', '#f4f4f4')
+        tran.selectAll('.tick line').attr('stroke', '#f4f4f4');
+        tran.selectAll('.tick text').attr('color', '#f4f4f4');
 
     }
 
