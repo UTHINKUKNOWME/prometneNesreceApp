@@ -25,7 +25,7 @@ export class AppComponent implements OnInit {
 
     first: boolean = true;
 
-    selectedValue: string = 'okolisce';
+    selectedValue: string = 'okoliscine';
 
     goBack: boolean = false;
 
@@ -182,7 +182,7 @@ export class AppComponent implements OnInit {
             let aggregationsUra = res.aggregations.poUrah.buckets;
             this.dataPass = aggregationsUra;
             console.log(aggregationsUra);
-            this.chartYLabel = 'Število nesrečov';
+            this.chartYLabel = 'Število nesreč';
             this.chartXLabel = 'Ure (0-24)';
             this.sortPoUrah();
             if (update) {
@@ -223,7 +223,7 @@ export class AppComponent implements OnInit {
             let aggregationsUra = res.aggregations.poUrah.buckets;
             this.dataPass = aggregationsUra;
             console.log(aggregationsUra);
-            this.chartYLabel = 'Število nesrečov';
+            this.chartYLabel = 'Število nesreč';
             this.chartXLabel = 'Ure (0-24)';
             this.sortPoUrah();
             this.updateChart();
@@ -851,7 +851,7 @@ export class AppComponent implements OnInit {
                 .ease(d3.easeSin)
                 .attr('style', 'display:block;opacity:1;position: absolute;top: 1050px;left: 160px;width: 100%;font-family: sans-serif;color: white;animation:fadein 3s');
 
-            if (parseInt(year) > 2004) {
+            if (parseInt(year) > 1994) {
                 d3.select('#togglesDIV').transition()
                     .delay(1150)
                     .duration(500)
