@@ -5,11 +5,11 @@
     </h1>
 </div>
 
-<!--<h3 class="col-md-12 text-center">Elasticsearch server status: {{status}}</h3>-->
-<!--<h2>{{chartTitle}}</h2>-->
+<h3 class="col-md-12 text-center" style="opacity: 0;">Elasticsearch server status: {{status}}</h3>
 <button id="backBtn" mat-raised-button (click)="refresh()"
         style="opacity:0;margin-bottom: 10px;position: absolute;top: 130px;left: 30px;">BACK
 </button>
+<h3 id="leto" style="opacity:0;margin-bottom: 10px;position: absolute;top: 120px;left: 120px;color: white">Leto: {{yearATM}}</h3>
 <div id="barChart" style="opacity: 0"></div>
 
 <div id="chart" #chart style="position: absolute;top: 180px;opacity: 0;display: none"></div>

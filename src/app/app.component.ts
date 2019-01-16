@@ -1,14 +1,10 @@
-import {ChangeDetectorRef, Component, ElementRef, OnInit, ViewChild, ɵunv} from '@angular/core';
+import {ChangeDetectorRef, Component, ElementRef, OnInit, ViewChild} from '@angular/core';
 import {Client} from 'elasticsearch-browser';
 import {Dogodek} from './models/Dogodek';
 
 import * as d3 from 'd3';
 import {DogodkiService} from './dogodki.service';
-import {Povzrocitelj} from './models/Povzrocitelj';
 import {Udelezenec} from './models/Udelezenec';
-import {max} from 'rxjs/operators';
-import {animate, state, style, transition, trigger} from '@angular/animations';
-import {run} from 'tslint/lib/runner';
 
 @Component({
     selector: 'app-root',
@@ -25,7 +21,7 @@ export class AppComponent implements OnInit {
 
     first: boolean = true;
 
-    selectedValue: string = 'okoliscine';
+    selectedValue: string = 'okolisce';
 
     goBack: boolean = false;
 
@@ -70,6 +66,9 @@ export class AppComponent implements OnInit {
     refresh() {
         this.goBack = false;
         this.toggle1checked = false;
+        this.togglecheckedM = false;
+        this.togglecheckedZ = false;
+        this.selectedValue = 'okolisce';
         d3.select('#backBtn').transition()
             .duration(200)
             .ease(d3.easeSin)
@@ -101,6 +100,11 @@ export class AppComponent implements OnInit {
             .ease(d3.easeSin)
             .style('opacity', '0')
             .style('display', 'none');
+        d3.select('#leto').transition()
+            .duration(200)
+            .ease(d3.easeSin)
+            .style('opacity', '0');
+
 
         setTimeout(() => {
             d3.select('#piechart').selectAll('*').remove();
@@ -231,38 +235,6 @@ export class AppComponent implements OnInit {
         });
     }
 
-    filterPoKlasifikaciji(year: number): any {
-        this.client.search({
-                index: this.index,
-                body: {
-                    query: {
-                        // 'match_all': {}
-                        range: {
-                            Leto: {
-                                gte: year,
-                                lte: year
-                            }
-                        }
-                    },
-                    aggs: {
-                        poKlasi: {
-                            terms: {
-                                field: 'KlasifikacijaNesrece.keyword',
-                                size: 8
-                            }
-                        }
-                    }
-                }
-            }
-        ).then(res => {
-            let data = res.hits.hits;
-            let aggregationsKlasifikacija = res.aggregations.poKlasi.buckets;
-            this.dataPass = aggregationsKlasifikacija;
-            console.log(aggregationsKlasifikacija);
-        });
-    }
-
-
     filterPoVremenu(year: number): any {
         this.client.search({
                 index: this.index,
@@ -288,89 +260,6 @@ export class AppComponent implements OnInit {
             this.dataSelect = aggregations;
             this.drawPie();
             console.log(aggregations);
-        });
-    }
-
-    filterPoNaselju(year: number): any {
-        this.client.search({
-                index: this.index,
-                body: {
-                    query: {
-                        // 'match_all': {}
-                        range: {
-                            Leto: {
-                                gte: year,
-                                lte: year
-                            }
-                        }
-                    },
-                    aggs: {
-                        poSpolu: {
-                            terms: {
-                                field: 'VNaselju.keyword',
-                                size: 2
-                            }
-                        }
-                    }
-                }
-            }
-        ).then(res => {
-            let aggregations = res.aggregations.poSpolu.buckets;
-            this.dataPass = aggregations;
-            console.log(aggregations);
-        });
-    }
-
-    filterNajpogostejsihStarosti() {
-        this.client.search({
-                index: this.index,
-                body: {
-                    query: {
-                        'match': {
-                            'Udelezenec.Vloga': 'Povzročitelj'
-                        }
-                    },
-                    aggs: {
-                        agregacija: {
-                            terms: {
-                                field: 'Udelezenec.Starost',
-                                size: 5
-                            }
-                        }
-                    }
-                }
-            }
-        ).then(res => {
-            this.dataSelect = res.aggregations.agregacija.buckets;
-            this.drawPie();
-            console.log('najpogostejse', this.dataNajpogostejse);
-        });
-    }
-
-    filterComparePovzrociteljSpol() {
-        this.client.search({
-                index: this.index,
-                body: {
-                    query: {
-                        'match': {
-                            'Udelezenec.Vloga': 'Povzročitelj'
-                        }
-                    },
-                    aggs: {
-                        poSpolu: {
-                            terms: {
-                                field: 'Udelezenec.Spol.keyword',
-                                size: 2
-                            }
-                        }
-                    }
-
-                }
-            }
-        ).then(res => {
-            this.dataSelect = res.aggregations.poSpolu.buckets;
-            this.drawPie();
-            console.log('dataCompare', this.dataCompare);
         });
     }
 
@@ -781,6 +670,12 @@ export class AppComponent implements OnInit {
             _this.yearATM = year;
 
             d3.select('#backBtn').transition()
+                .delay(900)
+                .duration(800)
+                .ease(d3.easeSin)
+                .style('opacity', 1);
+
+            d3.select('#leto').transition()
                 .delay(900)
                 .duration(800)
                 .ease(d3.easeSin)
